@@ -4,13 +4,17 @@
 #include <ESP8266WiFi.h>
 #include "MPU6050.h"
 
+#define M_PI 3.14159265358979323846
 #define LED_PIN 13
 bool blinkState = false;
 
 int16_t ax, ay, az;
 int16_t gx, gy, gz;
 
-MPU6050 acc(0x68);
+int mean_ax,mean_ay,mean_az,mean_gx,mean_gy,mean_gz,state=0;
+int ax_offset,ay_offset,az_offset,gx_offset,gy_offset,gz_offset;
+
+MPU6050 acc;
 
 String message = "แจ้งเตือนมีคนหกล้ม";
 
@@ -28,10 +32,17 @@ void setup()
   delay(100);
   Serial.println("Init MPU6050");
   acc.initialize();
-  
   Serial.println("Testing device connections...");
-  Serial.println(acc.testConnection() ? "MPU6050 connection successful" : "MPU6050 connection failed");
-  delay(10000);
+  Serial.println(acc.testConnection() ? "MPU6050 connection successful" : "MPU6050 connection failed"); 
+  delay(100);
+
+  acc.setXAccelOffset(-3654);
+  acc.setYAccelOffset(-2276);
+  acc.setZAccelOffset(1239);
+  acc.setXGyroOffset(27);
+  acc.setYGyroOffset(29);
+  acc.setZGyroOffset(-35);
+  
   WiFiConnect(ssid, pass);
   LINE.setToken(LINE_TOKEN);
   pinMode(LED_PIN, OUTPUT);
@@ -39,6 +50,7 @@ void setup()
 
 void loop()
 {
+  int svm, theta;
   acc.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
   Serial.print("a/g:\t");
   Serial.print(ax); Serial.print("\t");
@@ -47,10 +59,31 @@ void loop()
   Serial.print(gx); Serial.print("\t");
   Serial.print(gy); Serial.print("\t");
   Serial.println(gz);
-  
-  //if((pitch>35) || (pitch<-35) || (roll>35) || (roll<-35)){
-  //  LINE.notify(message);
-  //}
+
+  svm = sqrt(pow(ax, 2) + pow(ay, 2) + pow(az, 2));
+  //theta = atan((sqrt(pow(ay, 2) + pow(az, 2))) / az) * (180 / M_PI);
+  unsigned long start, current;
+  bool flag = false;
+  if(svm > 2.5){
+    start = millis();
+    flage = true;
+    while(flag){
+      acc.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+      svm = sqrt(pow(ax, 2) + pow(ay, 2) + pow(az, 2));
+      //theta = atan((sqrt(pow(ay, 2) + pow(az, 2))) / az) * (180 / M_PI);
+      if(svm < 1.0){
+        current = millis();
+        if(current - start >= 3000){
+          LINE.notify(message);
+        }
+      }
+      else{
+        flag = false;
+      }
+      delay(10);
+    }
+  }
+  delay(10);
 }
 
 void WiFiConnect(String id, String password)

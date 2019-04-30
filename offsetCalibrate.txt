@@ -1,0 +1,2 @@
+acelX acelY acelZ giroX giroY giroZ
+-3654	-2276	1239	27	29	-35
