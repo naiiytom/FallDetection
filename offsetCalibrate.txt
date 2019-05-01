@@ -1,2 +1,7 @@
 acelX acelY acelZ giroX giroY giroZ
 -3654	-2276	1239	27	29	-35
+
+
+ax_normalize ay_normalize az_normailze
+16000	200	3000
+

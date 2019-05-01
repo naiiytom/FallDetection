@@ -6,7 +6,6 @@
 
 #define M_PI 3.14159265358979323846
 #define LED_PIN 13
-bool blinkState = false;
 
 int16_t ax, ay, az;
 int16_t gx, gy, gz;
@@ -16,11 +15,11 @@ int ax_offset,ay_offset,az_offset,gx_offset,gy_offset,gz_offset;
 
 MPU6050 acc;
 
-String message = "แจ้งเตือนมีคนหกล้ม";
+String message = "Detect: Patient fell!";
 
 #define LINE_TOKEN "9QhkSx5gEDNKUsbBw9eVziupjG5WSwyd99Qivd8izaj"
-String ssid = "GAMING HAUS";
-String pass = "#p@ssw0rd";
+String ssid = "tomoto";
+String pass = "1234567890";
 
 void WiFiConnect(String id, String pasword);
 
@@ -50,8 +49,11 @@ void setup()
 
 void loop()
 {
-  int svm, theta;
+  double svm, theta;
   acc.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+  ax = ax/(1000);
+  ay = ay/(1000);
+  az = az/(1000);
   Serial.print("a/g:\t");
   Serial.print(ax); Serial.print("\t");
   Serial.print(ay); Serial.print("\t");
@@ -61,20 +63,31 @@ void loop()
   Serial.println(gz);
 
   svm = sqrt(pow(ax, 2) + pow(ay, 2) + pow(az, 2));
-  //theta = atan((sqrt(pow(ay, 2) + pow(az, 2))) / az) * (180 / M_PI);
-  unsigned long start, current;
+  Serial.println(svm);
+  theta = atan((sqrt(pow(ay, 2) + pow(az, 2))) / az) * (180 / M_PI);
+  Serial.println(theta);
+  delay(100);
+  unsigned long startTime, currentTime;
   bool flag = false;
-  if(svm > 2.5){
-    start = millis();
-    flage = true;
+  if(svm >= 23.00  || theta < 1){
+    Serial.println("Fall!");
+    startTime = millis();
+    flag = true;
     while(flag){
+      Serial.println("Loop");
       acc.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-      svm = sqrt(pow(ax, 2) + pow(ay, 2) + pow(az, 2));
-      //theta = atan((sqrt(pow(ay, 2) + pow(az, 2))) / az) * (180 / M_PI);
-      if(svm < 1.0){
-        current = millis();
-        if(current - start >= 3000){
+      ax = ax/(1000);
+      ay = ay/(1000);
+      az = az/(1000);
+      svm = sqrt(pow(ax, 2) + pow(ay, 2)+ pow(az, 2));
+      theta = atan((sqrt(pow(ay, 2) + pow(az, 2))) / az) * (180 / M_PI);
+      if(svm <= 18.0 && theta <1){
+        Serial.println("Stabil");
+        currentTime = millis();
+        if(currentTime - startTime >= 3000){
+          Serial.println("Send Notify");
           LINE.notify(message);
+          break;
         }
       }
       else{
