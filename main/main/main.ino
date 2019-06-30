@@ -79,18 +79,34 @@ void loop()
       ax = ax/(1000);
       ay = ay/(1000);
       az = az/(1000);
+      Serial.print("a/g:\t");
+      Serial.print(ax); Serial.print("\t");
+      Serial.print(ay); Serial.print("\t");
+      Serial.print(az); Serial.print("\t");
+      Serial.print(gx); Serial.print("\t");
+      Serial.print(gy); Serial.print("\t");
+      Serial.println(gz);
       svm = sqrt(pow(ax, 2) + pow(ay, 2)+ pow(az, 2));
       theta = atan((sqrt(pow(ay, 2) + pow(az, 2))) / az) * (180 / M_PI);
+      bool sent = false;
       if(svm <= 18.0 && theta <1){
-        Serial.println("Stabil");
+        Serial.println("Stable");
         currentTime = millis();
         if(currentTime - startTime >= 3000){
-          Serial.println("Send Notify");
-          LINE.notify(message);
-          break;
+          if(!sent){
+            Serial.println("Send Notify");
+            LINE.notify(message);
+            sent = true;
+          }
         }
       }
       else{
+        if(sent){
+          Serial.println("Fall Duration");
+          currentTime = millis();
+          String msg = "Fall duration: " + String(int((currentTime - startTime)/1000)) + " seconds";
+          LINE.notify(msg);
+        }
         flag = false;
       }
       delay(10);
