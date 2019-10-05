@@ -1,2 +1,3 @@
 
-lib/
+lib/*
+./line_nitify_api_key.h5
